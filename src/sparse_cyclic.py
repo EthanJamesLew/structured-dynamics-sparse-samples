@@ -183,3 +183,47 @@ def legendre_dictionary(u: np.ndarray, p: int, r: int) -> typ.Tuple[
         return Dmon, Dleg, Ind1, Ind20, Ind11, Ind300, Ind210, Ind120, Ind11
     else:
         raise ValueError
+
+def leg2mon(cL,p,Ind1,Ind20,Ind11,Ind300,Ind210,Ind120,Ind111):
+    cM = np.zeros(cL.shape)
+    cM[0] = cL[0] - np.sum(cL[Ind20])*np.sqrt(5.0)/2.0
+    
+    if p == 2:
+        raise ValueError
+    elif p == 3:
+        # terms from Ind1 and Ind300
+        cM[Ind1] = cL[Ind1] * np.sqrt(3.0) - cL[Ind300] * np.sqrt(7.0) * 3.0/2.0
+        n = len(Ind1)
+        
+        # terms from Ind210
+        s = 0
+        for ii in range(1,n):
+            #print(ii, n, s, s+n-ii)
+            #print(cM.shape, cL.shape, Ind210.shape)
+            cM[Ind1[ii:n]] = cM[Ind1[ii:n]] - cL[Ind210[s:s+n-ii]] * np.sqrt(15.0)/2.0
+            s += n - ii
+            
+        # terms from Ind120
+        s = 0
+        for ii in range(0, n-1):
+            #print(ii, n, s, s+n-ii)
+            cM[Ind1[ii]] = cM[Ind1[ii]] - np.sum(cL[Ind120[s:s+n-ii-1]]) * np.sqrt(15.0)/2.0
+            s += n - ii - 1
+            
+        # (ui)^2
+        cM[Ind20] = cL[Ind20] * np.sqrt(5.0) * 3.0/2.0
+        # (ui)*(uj)
+        cM[Ind11] = cL[Ind11] * 3.0
+
+        # (ui)^3
+        cM[Ind300] = cL[Ind300] * np.sqrt(7.0)*5.0/2.0
+        # (ui)^2*(uj)
+        cM[Ind210] = cL[Ind210] * np.sqrt(15.0)*3.0/2.0
+        # (ui)*(uj)^2
+        cM[Ind120] = cL[Ind120] * np.sqrt(15.0)*3.0/2.0
+        # (ui)*(uj)*(uk)
+        cM[Ind111] = cL[Ind111] * np.sqrt(3.0)*3.0
+        
+        return cM
+    else:
+        raise ValueError
