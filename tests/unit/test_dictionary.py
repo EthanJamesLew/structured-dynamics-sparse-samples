@@ -1,5 +1,5 @@
 import numpy as np
-from src.sparse_cyclic import legendre_dictionary
+from src.sparse_cyclic import legendre_dictionary, douglas_rachford
 
 def test_dictionary_3():
     """this tests the pyhton implementation directly against the Matlab one for p=3"""
@@ -19,3 +19,22 @@ def test_dictionary_3():
     assert np.all((ws['Ind11'] - 1 - Ind11) == 0)
     assert np.all(np.abs(ws['Amon'] - Dmon) < 1E-10)
     assert np.all(np.abs(ws['Aleg'] - Dleg) < 1E-10)
+
+
+def test_douglas_rachford():
+    import scipy.io
+    import pathlib
+    this_dir = pathlib.Path(__file__).parent.resolve()
+    ws = scipy.io.loadmat(str(this_dir / "../matlab/douglas_rachford_out.mat"))
+
+    Aleg1 = ws['Aleg1']
+    V = ws['V']
+    sigma = ws['sigma'][0][0]
+    tau = ws['tau'][0][0]
+    mu = ws['mu'][0][0]
+    MaxIt = ws['MaxIt'][0][0]
+    tol = ws['tol'][0][0]
+
+    cleg = douglas_rachford(Aleg1,V,sigma,tau,mu,MaxIt,tol)
+    
+    assert np.all(np.isclose(np.abs(cleg - ws['cleg']), 0))

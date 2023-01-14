@@ -2,6 +2,81 @@ import numpy as np
 import itertools
 import typing as typ
 
+import scipy.linalg
+
+import scipy.linalg
+
+
+def mldivide(A, b):
+    """helper to match the matlab A \ b
+    
+    NOTE: lstsq is much slower than this approach (not as safe though)
+    """
+    return np.linalg.solve(A.T@A, A.T@b)
+
+
+def douglas_rachford(A, b, sigma, tau, mu, MaxIt, tol):
+    """Douglas–Rachford splitting algorithm for sparse optimization"""
+
+    def ProxF(x, u):
+        x1 = np.copy(x)
+        for idx in range(x.shape[0]):
+            x1[idx][0] = max(np.abs(x1[idx][0]) - tau, 0)
+        x1 *= np.sign(x)
+        u1 = b + (u-b) * min(sigma/np.linalg.norm(u-b,ord=2),1)
+        return x1, u1
+    
+    def rProxF(x,u):
+        x1, u1 = ProxF(x, u)
+        x1 = 2*x1-x
+        u1 = 2*u1-u
+        return x1, u1
+    
+    def ProxG(x,u):
+        y = x + A.T@u
+        ls = mldivide(pAlower, y)
+        x1 = mldivide(pAlower.T, ls)
+        u1 = A@x1
+        return x1, u1
+    
+    def rProxG(x,u):
+        x1, u1 = ProxG(x,u)
+        x1 = 2*x1-x
+        u1 = 2*u1-u
+        return x1, u1
+    
+    T = 1
+    N = A.shape[1]
+    M = len(b)
+    x = np.zeros((N, 1))
+    x1 = np.zeros((N, 1))
+    u1 = np.zeros((M, 1))
+    error = tol+1
+    
+    pAlower = np.linalg.cholesky(np.eye(N) + A.T@A);
+    mu1 = 1-mu
+    
+    while T<=MaxIt and error >=tol:
+        pass
+        # first step
+        p,q = rProxF(x1,u1)
+        
+        p,q = rProxG(p,q)
+        #print(p, q)
+        x1 = mu1*x1 + mu*p
+        u1 = mu1*u1 + mu*q
+
+        # second step
+        xnew,_ = ProxF(x1,u1)
+
+        # update
+        error = np.linalg.norm(x-xnew, ord=2)
+        print(f"[Douglas-Rachford Opt] Iter: {T}, Tol: {tol:2.4E}, Err: {error:2.4E}")
+        
+        x = xnew
+        T = T+1
+    return x
+
 
 def legendre_dictionary(u: np.ndarray, p: int, r: int) -> typ.Tuple[
     np.ndarray, np.ndarray, np.ndarray, 
